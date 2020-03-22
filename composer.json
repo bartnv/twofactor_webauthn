@@ -1,0 +1,32 @@
+{
+    "name": "mmvi/twofactor_webauthn",
+    "description": "This RoundCube plugin adds WebAuthn/FIDO2 verification to the login process",
+    "keywords": [ "login", "authentication", "security", "webauthn", "fido" ],
+    "homepage": "https://github.com/bartnv/twofactor_webauthn",
+    "type": "roundcube-plugin",
+    "license": "GPLv3+",
+    "version": "1.1",
+    "authors": [
+      {
+        "name": "Bart Noordervliet",
+        "email": "bart@mmvi.nl",
+        "role": "Developer"
+      }
+    ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "http://plugins.roundcube.net"
+        }
+    ],
+    "require": {
+        "php": ">=7.0",
+        "roundcube/plugin-installer": ">=0.1.6"
+    },
+    "extra": {
+        "roundcube": {
+            "min-version": "1.4"
+        }
+    },
+    "minimum-stability": "stable"
+}
