@@ -4,7 +4,7 @@
     "keywords": [ "login", "authentication", "security", "webauthn", "fido" ],
     "homepage": "https://github.com/bartnv/twofactor_webauthn",
     "type": "roundcube-plugin",
-    "license": "GPLv3+",
+    "license": "GPL-3.0+",
     "version": "1.1",
     "authors": [
       {
