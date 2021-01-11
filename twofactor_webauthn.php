@@ -257,7 +257,10 @@ class twofactor_webauthn extends rcube_plugin {
   private function getConfig() {
     $rcmail = rcmail::get_instance();
     $prefs = $rcmail->user->get_prefs();
-		return $prefs['twofactor_webauthn'] ?? [];
+    $config = $prefs['twofactor_webauthn'] ?? [];
+    if (!isset($config['activate'])) $config['activate'] = false;
+    if (!isset($config['keys'])) $config['keys'] = '[]';
+    return $config;
   }
   private function saveConfig($config) {
     $rcmail = rcmail::get_instance();
