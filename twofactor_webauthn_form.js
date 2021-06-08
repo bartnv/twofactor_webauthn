@@ -29,8 +29,8 @@ function twofactor_webauthn_auth() {
 }
 
 function twofactor_webauthn_redirect(data) {
-  if (data.delay) tw_timeout = setTimeout("location = './';", data.delay*1000);
-  else location = './';
+  if (data.delay) tw_timeout = setTimeout(`location = '${data.url}';`, data.delay*1000);
+  else location = data.url;
 }
 
 // WebAuthn support by David Earl - https://github.com/davidearl/webauthn/

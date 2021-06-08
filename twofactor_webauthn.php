@@ -193,11 +193,11 @@ class twofactor_webauthn extends rcube_plugin {
     if ($webauthn->authenticate($response, $config['keys'])) {
       $_SESSION['twofactor_webauthn_checked'] = 1;
       $rcmail->output->show_message($this->gettext('authentication_succeeded'), 'confirmation');
-      $rcmail->output->command('plugin.twofactor_webauthn_redirect', [ 'delay' => 1 ]);
+      $rcmail->output->command('plugin.twofactor_webauthn_redirect', [ 'url' => $rcmail->url(['_task'=>'mail'], true, false, true), 'delay' => 1 ]);
     }
     else {
       $rcmail->output->show_message($this->gettext('authentication_failed'), 'warning');
-      $rcmail->output->command('plugin.twofactor_webauthn_redirect', [ 'delay' => 10 ]);
+      $rcmail->output->command('plugin.twofactor_webauthn_redirect', [ 'url' => $rcmail->url([], true), 'delay' => 10 ]);
     }
   }
 
