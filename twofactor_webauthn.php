@@ -48,7 +48,7 @@ class twofactor_webauthn extends rcube_plugin {
 		$rcmail = rcmail::get_instance();
 
 		$config = $this->getConfig();
-		if (!$config['activate'] || empty($config['keys'])) {
+		if (!$config['activate'] || empty($config['keys']) || ($config['keys'] == '[]')) {
       $_SESSION['twofactor_webauthn_checked'] = 1;
       return;
     }
