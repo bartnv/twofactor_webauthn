@@ -3,7 +3,7 @@
 $labels = array();
 $labels['activate'] = 'Verwenden';
 $labels['twofactor_webauthn'] = 'Zwei-Faktor Authentifizierung';
-$labels['config'] = 'Zwei-Faktor Authentifizierung';
+$labels['config'] = '2-Faktor Authentifizierung';
 $labels['two_step_verification_form'] = 'Zwei-Faktor Authentifizierungs Formular';
 $labels['add_new'] = 'Sicherheitsschlüssel hinzufügen';
 $labels['no_keys_yet'] = 'Bisher keine Schlüssel registriert';
