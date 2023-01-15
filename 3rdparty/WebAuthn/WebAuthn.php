@@ -75,7 +75,7 @@ class WebAuthn
     *               this computer, but with any available authentication device, e.g. known to Windows Hello)
     * @return string pass this JSON string back to the browser
     */
-  public function prepareChallengeForRegistration($username, $userid, $crossPlatform=FALSE)
+    public function prepareChallengeForRegistration($username, $userid, $crossPlatform=FALSE)
     {
         $result = (object)array();
         $rbchallenge = self::randomBytes(16);
@@ -168,7 +168,6 @@ class WebAuthn
 
         $hashId = hash('sha256', $this->appid, true);
         if ($hashId != $ao->rpIdHash) {
-            //log(bin2hex($hashId).' '.bin2hex($ao->rpIdHash));
             $this->oops('cannot decode key response (5)');
         }
 
@@ -184,6 +183,23 @@ class WebAuthn
 
         $ao->attData->keyBytes = self::COSEECDHAtoPKCS($cborPubKey);
 
+        if (is_null($ao->attData->keyBytes)) {
+          /* There is a bug in Firefox whereby it provides only one byte for the aaguid field.
+             This means everything else is shifted down by 15 bytes, resulting in a failure to pick up the
+             key algortihm field in COSEECDHAtoPKCS. So if that happens, try again with just that one byte,
+             and only then produce an error if that also fails.
+             Thank you: https://www.antradar.com/blog-firefox-webauthn-incompability
+           */
+          $ao->attData->aaguid = substr($bs, 37, 1);
+          $ao->attData->credIdLen = (ord($bs[38])<<8)+ord($bs[39]);
+          $ao->attData->credId = substr($bs, 40, $ao->attData->credIdLen);
+          $cborPubKey  = substr($bs, 40+$ao->attData->credIdLen); // after credId to end of string
+          $ao->attData->keyBytes = self::COSEECDHAtoPKCS($cborPubKey);
+          if (is_null($ao->attData->keyBytes)) {
+            $this->oops('cannot decode key response (8)');
+          }
+        }
+
         $rawId = self::arrayToString($info->rawId);
         if ($ao->attData->credId != $rawId) {
             $this->oops('cannot decode key response (16)');
@@ -192,7 +208,6 @@ class WebAuthn
         $publicKey = (object)array();
         $publicKey->key = $ao->attData->keyBytes;
         $publicKey->id = $info->rawId;
-        //log($publicKey->key);
 
         if (empty($userwebauthn)) {
             $userwebauthn = [$publicKey];
@@ -217,26 +232,34 @@ class WebAuthn
 
     /**
     * generates a new key string for the physical key, fingerprint
-    * reader or whatever to respond to on login
-    * @param string $userwebauthn the existing webauthn field for the user from your database
+    * reader or whatever to respond to on login.
+    * You should store the revised userwebauthn back to your database after calling this function
+    * (to avoid replay attacks)
+    * @param string &$userwebauthn the existing webauthn field for the user from your database
     * @return string to pass to javascript webauthnAuthenticate
     */
-    public function prepareForLogin($userwebauthn)
+    public function prepareForLogin(&$userwebauthn)
     {
         $allow = (object)array();
         $allow->type = 'public-key';
         $allow->transports = array('usb','nfc','ble','internal');
         $allow->id = null;
         $allows = array();
+
+        $challengebytes = self::randomBytes(16);
+        $challengeb64 = rtrim(strtr(base64_encode($challengebytes), '+/', '-_'), '=');
+
         if (! empty($userwebauthn)) {
-            foreach (json_decode($userwebauthn) as $key) {
+            $webauthn = json_decode($userwebauthn);
+            foreach ($webauthn as $idx => $key) {
                 $allow->id = $key->id;
                 $allows[] = clone $allow;
+                $webauthn[$idx]->challenge = $challengeb64;
             }
+            $userwebauthn = json_encode($webauthn);
         } else {
             /* including empty user, so they can't tell whether the user exists or not (need same result each
             time for each user) */
-            // log("fabricating key");
             $allow->id = array();
             $rb = md5((string)time());
             $allow->id = self::stringToArray($rb);
@@ -245,7 +268,7 @@ class WebAuthn
 
         /* generate key request */
         $publickey = (object)array();
-        $publickey->challenge = self::stringToArray(self::randomBytes(16));
+        $publickey->challenge = self::stringToArray($challengebytes);
         $publickey->timeout = 60000;
         $publickey->allowCredentials = $allows;
         $publickey->userVerification = 'discouraged';
@@ -258,15 +281,17 @@ class WebAuthn
 
     /**
     * validates a response for login or 2fa
-    * requires info from the hardware via javascript given below
+    * requires info from the hardware via javascript given below.
+    * You should store the revised userwebauthn back to your database after calling this function
+    * (to avoid replay attacks)
     * @param string $info supplied to the PHP script via a POST, constructed by the Javascript given below, ultimately
     *        provided by the key
-    * @param string $userwebauthn the exisiting webauthn field for the user from your
+    * @param string &$userwebauthn the exisiting webauthn field for the user from your
     *        database (it's actaully a JSON string, but that's entirely internal to
     *        this code)
     * @return boolean true for valid authentication or false for failed validation
     */
-    public function authenticate($info, $userwebauthn)
+    public function authenticate($info, &$userwebauthn)
     {
         if (! is_string($info)) {
             $this->oops('info must be a string', 1);
@@ -298,6 +323,17 @@ class WebAuthn
             $this->oops("challenge mismatch");
         }
 
+        /* Does the challenge Correspond to the one we stored for the user? If no challenge is stored, that
+           implies $userwebauthn was not saved back to the user database after prepareForLogin. It
+           would be better to produce an error here, but for the purposes of backward compatibility, it'll
+           allow it, but with a replay vulnerability */
+        if (isset($key->challenge) && $key->challenge != $info->response->clientData->challenge) {
+            $this->oops("you cannot use the same login more than once");
+        }
+        /* clear the challenge (but retain it as a property) from each of the keys, so it cannot be re-used */
+        foreach($webauthn as $idx => $candkey) { $webauthn[$idx]->challenge = ''; }
+        $userwebauthn = json_encode($webauthn);
+
         /* cross check origin */
         $origin = parse_url($info->response->clientData->origin);
         if ($this->appid != $origin['host']) {
@@ -317,7 +353,6 @@ class WebAuthn
 
         $hashId = hash('sha256', $this->appid, true);
         if ($hashId != $ao->rpIdHash) {
-            // log(bin2hex($hashId).' '.bin2hex($ao->rpIdHash));
             $this->oops('cannot decode key response (2b)');
         }
 
@@ -338,9 +373,7 @@ class WebAuthn
 
         $signature = self::arrayToString($info->response->signature);
 
-        //$key = str_replace(chr(13), '', $key->key);
         $key = $key->key;
-        // log($key);
         switch (@openssl_verify($signeddata, $signature, $key, OPENSSL_ALGO_SHA256)) {
         case 1:
         return true; /* hooray, we're in */
@@ -422,7 +455,7 @@ class WebAuthn
         $cosePubKey = \CBOR\CBOREncoder::decode($binary);
 
         if (! isset($cosePubKey[3] /* cose_alg */)) {
-            $this->oops('cannot decode key response (8)');
+            return NULL;
         }
 
         switch ($cosePubKey[3]) {

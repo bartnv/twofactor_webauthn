@@ -57,7 +57,7 @@ function twofactor_webauthn_list(data) {
 	}
 }
 
-// WebAuthn support by David Earl - https://github.com/davidearl/webauthn/
+// WebAuthn support by David Earl - https://github.com/davidearl/webauthn/ - License: MIT - Version: 2022-12-08
 function webauthnRegister(key, callback){
 	key = JSON.parse(key);
 	key.publicKey.attestation = undefined;

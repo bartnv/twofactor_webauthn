@@ -55,6 +55,7 @@ class twofactor_webauthn extends rcube_plugin {
 
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
     $challenge = $webauthn->prepareForLogin($config['keys']);
+    $this->saveConfig($config);
     $rcmail->output->set_env('twofactor_webauthn_challenge', $challenge);
 		$rcmail->output->set_pagetitle($this->gettext('twofactor_webauthn'));
 		$this->add_texts('localization', true);
@@ -118,6 +119,7 @@ class twofactor_webauthn extends rcube_plugin {
     $config = $this->getConfig();
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
     $challenge = $webauthn->prepareForLogin($config['keys']);
+    $this->saveConfig($config);
     $rcmail->output->command('plugin.twofactor_webauthn_challenge', [ 'mode' => 'test', 'challenge' => $challenge ]);
   }
 
@@ -131,6 +133,7 @@ class twofactor_webauthn extends rcube_plugin {
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
     $config = $this->getConfig();
     if ($webauthn->authenticate($response, $config['keys'])) {
+      $this->saveConfig($config);
       $response = json_decode($response);
       $rcmail->output->show_message($this->gettext('key_checked') . ' ' . dechex(crc32(implode('', $response->rawId))), 'confirmation');
     }
@@ -199,6 +202,7 @@ class twofactor_webauthn extends rcube_plugin {
       $rcmail->output->show_message($this->gettext('authentication_failed'), 'warning');
       $rcmail->output->command('plugin.twofactor_webauthn_redirect', [ 'url' => $rcmail->url([], true), 'delay' => 10 ]);
     }
+    $this->saveConfig($config);
   }
 
   public function twofactor_webauthn_form() {
