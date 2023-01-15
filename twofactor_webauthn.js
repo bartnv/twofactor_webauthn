@@ -1,62 +1,60 @@
 if (window.rcmail) {
-  rcmail.addEventListener('init', function(evt) {
-    rcmail.register_command('plugin.twofactor_webauthn_prepare', twofactor_webauthn_prepare, true);
-    rcmail.register_command('plugin.twofactor_webauthn_delete', twofactor_webauthn_delete, true);
-    rcmail.register_command('plugin.twofactor_webauthn_save', twofactor_webauthn_save, true);
-    rcmail.register_command('plugin.twofactor_webauthn_test', twofactor_webauthn_test);
-    rcmail.addEventListener('plugin.twofactor_webauthn_challenge', twofactor_webauthn_challenge);
-    rcmail.addEventListener('plugin.twofactor_webauthn_list', twofactor_webauthn_list);
-    if (rcmail.env.twofactor_webauthn_keylist) twofactor_webauthn_list(JSON.parse(rcmail.env.twofactor_webauthn_keylist));
-    else rcmail.http_get('plugin.twofactor_webauthn_list');
-  });
+	rcmail.addEventListener('init', function(evt) {
+		rcmail.register_command('plugin.twofactor_webauthn_prepare', twofactor_webauthn_prepare, true);
+		rcmail.register_command('plugin.twofactor_webauthn_delete', twofactor_webauthn_delete, true);
+		rcmail.register_command('plugin.twofactor_webauthn_save', twofactor_webauthn_save, true);
+		rcmail.register_command('plugin.twofactor_webauthn_test', twofactor_webauthn_test);
+		rcmail.addEventListener('plugin.twofactor_webauthn_challenge', twofactor_webauthn_challenge);
+		rcmail.addEventListener('plugin.twofactor_webauthn_list', twofactor_webauthn_list);
+		if (rcmail.env.twofactor_webauthn_keylist) twofactor_webauthn_list(JSON.parse(rcmail.env.twofactor_webauthn_keylist));
+		else rcmail.http_get('plugin.twofactor_webauthn_list');
+	});
 }
 
 function twofactor_webauthn_prepare() {
-  rcmail.http_post('plugin.twofactor_webauthn_prepare');
+	rcmail.http_post('plugin.twofactor_webauthn_prepare');
 }
 function twofactor_webauthn_delete(id) {
-  rcmail.http_post('plugin.twofactor_webauthn_delete', { id: id });
+	rcmail.http_post('plugin.twofactor_webauthn_delete', { id: id });
 }
 function twofactor_webauthn_test() {
-  rcmail.http_post('plugin.twofactor_webauthn_test');
+	rcmail.http_post('plugin.twofactor_webauthn_test');
 }
 function twofactor_webauthn_save() {
-  rcmail.http_post('plugin.twofactor_webauthn_save', { activate: $('#twofactor_activate').prop('checked') });
+	rcmail.http_post('plugin.twofactor_webauthn_save', { activate: $('#twofactor_activate').prop('checked') });
 }
 
-
 function twofactor_webauthn_challenge(data) {
-  console.log('oink');
-  if (data.mode == 'register') {
-    webauthnRegister(data.challenge, function(success, info) {
-      if (success) {
-        rcmail.http_post('plugin.twofactor_webauthn_register', { response: info });
-      }
-      else { /* do something already! */ }
-    });
-  }
-  else if (data.mode == 'test') {
-    webauthnAuthenticate(data.challenge, function(success, info) {
-      if (success) {
-        rcmail.http_post('plugin.twofactor_webauthn_check', { response: info });
-      }
-      else { /* do something already! */ }
-    });
-  }
+	if (data.mode == 'register') {
+		webauthnRegister(data.challenge, function(success, info) {
+			if (success) {
+				rcmail.http_post('plugin.twofactor_webauthn_register', { response: info });
+			}
+			else { console.log('webauthRegister failed:', info); }
+		});
+	}
+	else if (data.mode == 'test') {
+		webauthnAuthenticate(data.challenge, function(success, info) {
+			if (success) {
+				rcmail.http_post('plugin.twofactor_webauthn_check', { response: info });
+			}
+			else { console.log('webauthnAuthenticate failed:', info); }
+		});
+	}
 }
 
 function twofactor_webauthn_list(data) {
-  let ul = $('#twofactor_webauthn_keylist');
-  ul.empty();
-  if (!data || !data.length) {
-    ul.append(rcmail.gettext('no_keys_yet', 'twofactor_webauthn'));
-    rcmail.enable_command('plugin.twofactor_webauthn_test', false);
-    return;
-  }
-  rcmail.enable_command('plugin.twofactor_webauthn_test', true);
-  for (id of data) {
-    ul.append('<li>ID: ' + id + ' <span onclick="if (confirm(\'' + rcmail.gettext('confirm_delete_key', 'twofactor_webauthn') + ' ' + id + '?\')) { return rcmail.command(\'plugin.twofactor_webauthn_delete\', \'' + id + '\'); } else return false;">✖</span>');
-  }
+	let ul = $('#twofactor_webauthn_keylist');
+	ul.empty();
+	if (!data || !data.length) {
+		ul.append(rcmail.gettext('no_keys_yet', 'twofactor_webauthn'));
+		rcmail.enable_command('plugin.twofactor_webauthn_test', false);
+		return;
+	}
+	rcmail.enable_command('plugin.twofactor_webauthn_test', true);
+	for (id of data) {
+		ul.append('<li>ID: ' + id + ' <span onclick="if (confirm(\'' + rcmail.gettext('confirm_delete_key', 'twofactor_webauthn') + ' ' + id + '?\')) { return rcmail.command(\'plugin.twofactor_webauthn_delete\', \'' + id + '\'); } else return false;">✖</span>');
+	}
 }
 
 // WebAuthn support by David Earl - https://github.com/davidearl/webauthn/
@@ -70,7 +68,7 @@ function webauthnRegister(key, callback){
 		.then(function (aNewCredentialInfo) {
 			var cd = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(aNewCredentialInfo.response.clientDataJSON)));
 			if (key.b64challenge != cd.challenge) {
-				callback(false, 'key returned something unexpected (1)');
+				return callback(false, 'key returned something unexpected (1)');
 			}
 			if ('https://'+key.publicKey.rp.name != cd.origin) {
 				return callback(false, 'key returned something unexpected (2)');
@@ -124,8 +122,7 @@ function webauthnAuthenticate(key, cb){
 		.then(function(aAssertion) {
 			var ida = [];
 			(new Uint8Array(aAssertion.rawId)).forEach(function(v){ ida.push(v); });
-			var cd = JSON.parse(String.fromCharCode.apply(null,
-														  new Uint8Array(aAssertion.response.clientDataJSON)));
+			var cd = JSON.parse(String.fromCharCode.apply(null, new Uint8Array(aAssertion.response.clientDataJSON)));
 			var cda = [];
 			(new Uint8Array(aAssertion.response.clientDataJSON)).forEach(function(v){ cda.push(v); });
 			var ad = [];
