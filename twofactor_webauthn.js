@@ -28,7 +28,8 @@ function twofactor_webauthn_challenge(data) {
 	if (data.mode == 'register') {
 		webauthnRegister(data.challenge, function(success, info) {
 			if (success) {
-				rcmail.http_post('plugin.twofactor_webauthn_register', { response: info });
+				var name = prompt(rcmail.gettext('request_key_name', 'twofactor_webauthn'));
+				rcmail.http_post('plugin.twofactor_webauthn_register', { response: info, name: name });
 			}
 			else { console.log('webauthRegister failed:', info); }
 		});
@@ -52,8 +53,10 @@ function twofactor_webauthn_list(data) {
 		return;
 	}
 	rcmail.enable_command('plugin.twofactor_webauthn_test', true);
-	for (id of data) {
-		ul.append('<li>ID: ' + id + ' <span onclick="if (confirm(\'' + rcmail.gettext('confirm_delete_key', 'twofactor_webauthn') + ' ' + id + '?\')) { return rcmail.command(\'plugin.twofactor_webauthn_delete\', \'' + id + '\'); } else return false;">✖</span>');
+	for (key of data) {
+		ul.append('<li title="' + key.id + '">' + (key.name??key.id) +
+			' <span onclick="if (confirm(\'' + rcmail.gettext('confirm_delete_key', 'twofactor_webauthn') + ' ' + key.id + (key.name?' ('+key.name+')':'') +
+			'?\')) { return rcmail.command(\'plugin.twofactor_webauthn_delete\', \'' + key.id + '\'); } else return false;">✖</span>');
 	}
 }
 

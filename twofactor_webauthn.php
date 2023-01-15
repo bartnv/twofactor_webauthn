@@ -148,17 +148,14 @@ class twofactor_webauthn extends rcube_plugin {
       error_log('Received empty response on webauthn challenge');
       return;
     }
+    $name = rcube_utils::get_input_value('name', rcube_utils::INPUT_POST);
     $rcmail = rcmail::get_instance();
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
     $config = $this->getConfig();
-    $config['keys'] = $webauthn->register($response, $config['keys'] ?? '');
+    $config['keys'] = $webauthn->register($response, $config['keys'] ?? '', $name);
     $this->saveConfig($config);
-    $list = [];
-    foreach (json_decode($config['keys']) as $key) {
-      $list[] = dechex(crc32(implode('', $key->id)));
-    }
     $rcmail->output->show_message($this->gettext('key_registered'), 'confirmation');
-    $rcmail->output->command('plugin.twofactor_webauthn_list', $list);
+    $rcmail->output->command('plugin.twofactor_webauthn_list', $this->getList($config));
   }
 
   function twofactor_webauthn_delete() {
@@ -176,12 +173,8 @@ class twofactor_webauthn extends rcube_plugin {
     }
     $config['keys'] = json_encode($newkeys);
     $this->saveConfig($config);
-    $list = [];
-    foreach ($newkeys as $key) {
-      $list[] = dechex(crc32(implode('', $key->id)));
-    }
     $rcmail->output->show_message($this->gettext('key_deleted'), 'confirmation');
-    $rcmail->output->command('plugin.twofactor_webauthn_list', $list);
+    $rcmail->output->command('plugin.twofactor_webauthn_list', $this->getList($config));
   }
 
   function twofactor_webauthn_login() {
@@ -210,7 +203,7 @@ class twofactor_webauthn extends rcube_plugin {
     $config = $this->getConfig();
 
     $rcmail->output->set_env('product_name', $rcmail->config->get('product_name'));
-    $rcmail->output->set_env('twofactor_webauthn_keylist', json_encode($this->getList()));
+    $rcmail->output->set_env('twofactor_webauthn_keylist', json_encode($this->getList($config)));
 
     $keys = html::tag('legend', [], rcube::Q($this->gettext('registered_keys')));
     $keys .= html::tag('ul', [ 'id' => 'twofactor_webauthn_keylist' ], rcube::Q($this->gettext('loading')));
@@ -272,11 +265,11 @@ class twofactor_webauthn extends rcube_plugin {
     $prefs['twofactor_webauthn'] = $config;
     $rcmail->user->save_prefs($prefs);
   }
-  private function getList() {
-    $config = $this->getConfig();
+  private function getList($config = null) {
+    if (!$config) $config = $this->getConfig();
     $list = [];
     foreach (json_decode($config['keys']) as $key) {
-      $list[] = dechex(crc32(implode('', $key->id)));
+      $list[] = [ 'id' => dechex(crc32(implode('', $key->id))), 'name' => empty($key->name)?null:$key->name ];
     }
     return $list;
   }

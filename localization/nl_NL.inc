@@ -19,6 +19,7 @@ $labels['authentication_failed'] = 'Authenticatie mislukt';
 $labels['authentication_cancelled'] = 'Authenticatie geannuleerd';
 $labels['test_key'] = 'Sleutel testen';
 $labels['key_checked'] = 'Sleutel gecontroleerd met ID';
+$labels['request_key_name'] = 'Voer een naam in voor deze sleutel';
 
 // Messages used for the different portions of the plugin
 $messages = array();
