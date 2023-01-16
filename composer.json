@@ -5,7 +5,7 @@
     "homepage": "https://github.com/bartnv/twofactor_webauthn",
     "type": "roundcube-plugin",
     "license": "GPL-3.0+",
-    "version": "1.1",
+    "version": "1.2",
     "authors": [
       {
         "name": "Bart Noordervliet",

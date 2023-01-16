@@ -4,7 +4,7 @@
  *
  * This RoundCube plugin adds WebAuthn/FIDO2 verification to the login process
  *
- * @version 1.0.0
+ * @version 1.2.0
  * @author Bart Noordervliet <bart@mmvi.nl>
  * @url https://github.com/bartnv/twofactor_webauthn
  */
