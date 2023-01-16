@@ -27,6 +27,7 @@ class twofactor_webauthn extends rcube_plugin {
     $this->register_action('plugin.twofactor_webauthn_save', array($this, 'twofactor_webauthn_save'));
 		$this->register_action('plugin.twofactor_webauthn_prepare', array($this, 'twofactor_webauthn_prepare'));
     $this->register_action('plugin.twofactor_webauthn_register', array($this, 'twofactor_webauthn_register'));
+    $this->register_action('plugin.twofactor_webauthn_rename', array($this, 'twofactor_webauthn_rename'));
     $this->register_action('plugin.twofactor_webauthn_delete', array($this, 'twofactor_webauthn_delete'));
     $this->register_action('plugin.twofactor_webauthn_test', array($this, 'twofactor_webauthn_test'));
     $this->register_action('plugin.twofactor_webauthn_check', array($this, 'twofactor_webauthn_check'));
@@ -155,6 +156,31 @@ class twofactor_webauthn extends rcube_plugin {
     $config['keys'] = $webauthn->register($response, $config['keys'] ?? '', $name);
     $this->saveConfig($config);
     $rcmail->output->show_message($this->gettext('key_registered'), 'confirmation');
+    $rcmail->output->command('plugin.twofactor_webauthn_list', $this->getList($config));
+  }
+
+  function twofactor_webauthn_rename() {
+    $id = rcube_utils::get_input_value('id', rcube_utils::INPUT_POST);
+    if (empty($id)) {
+      error_log('Received empty id on webauthn rename');
+      return;
+    }
+    $name = rcube_utils::get_input_value('name', rcube_utils::INPUT_POST);
+    if (empty($name)) {
+      error_log('Received empty name on webauthn rename');
+      return;
+    }
+    $rcmail = rcmail::get_instance();
+    $config = $this->getConfig();
+    $keys = json_decode($config['keys']);
+    foreach ($keys as &$key) {
+      if (dechex(crc32(implode('', $key->id))) === $id) {
+        $key->name = $name;
+      }
+    }
+    $config['keys'] = json_encode($keys);
+    $this->saveConfig($config);
+    $rcmail->output->show_message($this->gettext('key_renamed') . ' ' . $name, 'confirmation');
     $rcmail->output->command('plugin.twofactor_webauthn_list', $this->getList($config));
   }
 

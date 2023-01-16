@@ -1,6 +1,7 @@
 if (window.rcmail) {
 	rcmail.addEventListener('init', function(evt) {
 		rcmail.register_command('plugin.twofactor_webauthn_prepare', twofactor_webauthn_prepare, true);
+		rcmail.register_command('plugin.twofactor_webauthn_rename', twofactor_webauthn_rename, true);
 		rcmail.register_command('plugin.twofactor_webauthn_delete', twofactor_webauthn_delete, true);
 		rcmail.register_command('plugin.twofactor_webauthn_save', twofactor_webauthn_save, true);
 		rcmail.register_command('plugin.twofactor_webauthn_test', twofactor_webauthn_test);
@@ -13,6 +14,9 @@ if (window.rcmail) {
 
 function twofactor_webauthn_prepare() {
 	rcmail.http_post('plugin.twofactor_webauthn_prepare');
+}
+function twofactor_webauthn_rename(id, name) {
+	rcmail.http_post('plugin.twofactor_webauthn_rename', { id: id, name: name });
 }
 function twofactor_webauthn_delete(id) {
 	rcmail.http_post('plugin.twofactor_webauthn_delete', { id: id });
@@ -55,8 +59,11 @@ function twofactor_webauthn_list(data) {
 	rcmail.enable_command('plugin.twofactor_webauthn_test', true);
 	for (key of data) {
 		ul.append('<li title="' + key.id + '">' + (key.name??key.id) +
-			' <span onclick="if (confirm(\'' + rcmail.gettext('confirm_delete_key', 'twofactor_webauthn') + ' ' + key.id + (key.name?' ('+key.name+')':'') +
-			'?\')) { return rcmail.command(\'plugin.twofactor_webauthn_delete\', \'' + key.id + '\'); } else return false;">✖</span>');
+			' <span class="rename" onclick="var name = prompt(\'' + rcmail.gettext('edit_key_name', 'twofactor_webauthn') + ' ' + (key.name?key.name:key.id) + '\');' +
+			'if (name) { return rcmail.command(\'plugin.twofactor_webauthn_rename\', \'' + key.id + '\', name); }">✎</span>' +
+			'<span class="delete" onclick="if (confirm(\'' + rcmail.gettext('confirm_delete_key', 'twofactor_webauthn') + ' ' + key.id + (key.name?' ('+key.name+')':'') +
+			'?\')) { return rcmail.command(\'plugin.twofactor_webauthn_delete\', \'' + key.id + '\'); } else return false;">✖</span>'
+		);
 	}
 }
 

@@ -20,6 +20,8 @@ $labels['authentication_cancelled'] = 'Authentication cancelled';
 $labels['test_key'] = 'Test key';
 $labels['key_checked'] = 'Successfully checked key';
 $labels['request_key_name'] = 'Please enter a name for this key';
+$labels['edit_key_name'] = 'Please enter a new name for key';
+$labels['key_renamed'] = 'Key renamed to';
 
 // Messages used for the different portions of the plugin
 $messages = array();
