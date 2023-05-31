@@ -9,6 +9,9 @@ if (window.rcmail) {
 		rcmail.addEventListener('plugin.twofactor_webauthn_list', twofactor_webauthn_list);
 		if (rcmail.env.twofactor_webauthn_keylist) twofactor_webauthn_list(JSON.parse(rcmail.env.twofactor_webauthn_keylist));
 		else rcmail.http_get('plugin.twofactor_webauthn_list');
+		$('#twofactor_activate').on('change', function() {
+			if (!this.checked) $('#twofactor_lock').prop('checked', false);
+		});
 	});
 }
 
@@ -25,7 +28,10 @@ function twofactor_webauthn_test() {
 	rcmail.http_post('plugin.twofactor_webauthn_test');
 }
 function twofactor_webauthn_save() {
-	rcmail.http_post('plugin.twofactor_webauthn_save', { activate: $('#twofactor_activate').prop('checked') });
+	rcmail.http_post('plugin.twofactor_webauthn_save', {
+		activate: $('#twofactor_activate').prop('checked'),
+		lock: $('#twofactor_lock').prop('checked')
+	});
 }
 
 function twofactor_webauthn_challenge(data) {

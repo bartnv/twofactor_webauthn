@@ -96,20 +96,44 @@ class twofactor_webauthn extends rcube_plugin {
   function twofactor_webauthn_save() {
     $rcmail = rcmail::get_instance();
     $activate = rcube_utils::get_input_value('activate', rcube_utils::INPUT_POST);
+    $lock = rcube_utils::get_input_value('lock', rcube_utils::INPUT_POST);
     if ($activate === 'true') $activate = true;
     elseif ($activate === 'false') $activate = false;
     else {
       error_log('Received invalid response on webauthn save');
       return;
     }
+    if ($lock === 'true') $lock = true;
+    elseif ($lock === 'false') $lock = false;
+    else {
+      error_log('Received invalid response on webauthn save');
+      return;
+    }
     $config = $this->getConfig();
+    if (isset($config['lock']) && $config['lock'] === true) {
+      $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
+      $challenge = $webauthn->prepareForLogin($config['keys']);
+      if ($config['activate'] != $activate) $config['setactivate'] = $activate;
+      if ($config['lock'] != $lock) $config['setlock'] = $lock;
+      if (isset($config['setactivate']) || isset($config['setlock'])) {
+        $this->saveConfig($config);
+        $rcmail->output->command('plugin.twofactor_webauthn_challenge', [ 'mode' => 'test', 'challenge' => $challenge ]);
+        return;
+      }
+    }
     $config['activate'] = $activate;
+    $config['lock'] = $lock;
     $this->saveConfig($config);
     $rcmail->output->show_message($this->gettext('successfully_saved'), 'confirmation');
   }
 
   function twofactor_webauthn_prepare() {
     $rcmail = rcmail::get_instance();
+    $config = $this->getConfig();
+    if (isset($config['lock']) && $config['lock'] === true) {
+      $rcmail->output->show_message($this->gettext('error_locked'), 'error');
+      return;
+    }
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
     $challenge = $webauthn->prepareChallengeForRegistration('RoundCube', '1', true);
     $rcmail->output->command('plugin.twofactor_webauthn_challenge', [ 'mode' => 'register', 'challenge' => $challenge ]);
@@ -134,6 +158,19 @@ class twofactor_webauthn extends rcube_plugin {
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
     $config = $this->getConfig();
     if ($webauthn->authenticate($response, $config['keys'])) {
+      if (isset($config['setactivate']) || isset($config['setlock'])) {
+        if (isset($config['setactivate'])) {
+          $config['activate'] = $config['setactivate'];
+          unset($config['setactivate']);
+        }
+        if (isset($config['setlock'])) {
+          $config['lock'] = $config['setlock'];
+          unset($config['setlock']);
+        }
+        $this->saveConfig($config);
+        $rcmail->output->show_message($this->gettext('successfully_saved'), 'confirmation');
+        return;
+      }
       $this->saveConfig($config);
       $response = json_decode($response);
       $rcmail->output->show_message($this->gettext('key_checked') . ' ' . dechex(crc32(implode('', $response->rawId))), 'confirmation');
@@ -172,6 +209,10 @@ class twofactor_webauthn extends rcube_plugin {
     }
     $rcmail = rcmail::get_instance();
     $config = $this->getConfig();
+    if (isset($config['lock']) && $config['lock'] === true) {
+      $rcmail->output->show_message($this->gettext('error_locked'), 'error');
+      return;
+    }
     $keys = json_decode($config['keys']);
     foreach ($keys as &$key) {
       if (dechex(crc32(implode('', $key->id))) === $id) {
@@ -192,6 +233,10 @@ class twofactor_webauthn extends rcube_plugin {
     }
     $rcmail = rcmail::get_instance();
     $config = $this->getConfig();
+    if (isset($config['lock']) && $config['lock'] === true) {
+      $rcmail->output->show_message($this->gettext('error_locked'), 'error');
+      return;
+    }
     $newkeys = [];
     foreach (json_decode($config['keys']) as $key) {
       if (dechex(crc32(implode('', $key->id))) === $id) continue;
@@ -252,6 +297,12 @@ class twofactor_webauthn extends rcube_plugin {
     $table->add('title', html::label($field_id, rcube::Q($this->gettext('activate'))));
     $table->add(null, $checkbox_activate->show($config['activate']==true?false:true));
 
+    $field_id = 'twofactor_lock';
+    $checkbox_lock = new html_checkbox([ 'name' => $field_id, 'id' => $field_id, 'type' => 'checkbox' ]);
+    $hint = html::tag('div', [ 'class' => 'hint', 'style' => 'margin-top: -0.5rem' ], rcube::Q($this->gettext('lock_hint')));
+    $table->add('title', html::label($field_id, rcube::Q($this->gettext('lock_config'))) . $hint);
+    $table->add(null, $checkbox_lock->show($config['lock']==true?false:true));
+
     $rcmail->output->add_gui_object('webauthnform', 'twofactor_webauthn-form');
 	  $form = $rcmail->output->form_tag([
 	    'id' => 'twofactor_webauthn-form',
@@ -282,6 +333,7 @@ class twofactor_webauthn extends rcube_plugin {
     $prefs = $rcmail->user->get_prefs();
     $config = $prefs['twofactor_webauthn'] ?? [];
     if (!isset($config['activate'])) $config['activate'] = false;
+    if (!isset($config['lock'])) $config['lock'] = false;
     if (!isset($config['keys'])) $config['keys'] = '[]';
     return $config;
   }

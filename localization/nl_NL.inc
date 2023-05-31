@@ -22,7 +22,10 @@ $labels['key_checked'] = 'Sleutel gecontroleerd met ID';
 $labels['request_key_name'] = 'Voer een naam in voor deze sleutel';
 $labels['edit_key_name'] = 'Voer een nieuwe naam in voor sleutel';
 $labels['key_renamed'] = 'Sleutel hernoemd naar';
+$labels['lock_config'] = 'Configuratie vergrendelen';
+$labels['lock_hint'] = 'Vereist authenticatie om 2FA te wijzigen of uit te schakelen.';
 
 // Messages used for the different portions of the plugin
 $messages = array();
 $messages['successfully_saved'] = 'Instellingen zijn succesvol opgeslagen.';
+$messages['error_locked'] = 'Actie mislukt: configuratie is vergrendeld.';

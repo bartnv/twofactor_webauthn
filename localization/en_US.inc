@@ -22,7 +22,10 @@ $labels['key_checked'] = 'Successfully checked key';
 $labels['request_key_name'] = 'Please enter a name for this key';
 $labels['edit_key_name'] = 'Please enter a new name for key';
 $labels['key_renamed'] = 'Key renamed to';
+$labels['lock_config'] = 'Lock configuration';
+$labels['lock_hint'] = 'Require authentication to change or disable 2FA.';
 
 // Messages used for the different portions of the plugin
 $messages = array();
 $messages['successfully_saved'] = 'Settings saved successfully.';
+$messages['error_locked'] = 'Action failed: configuration is locked.';
