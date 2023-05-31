@@ -235,13 +235,13 @@ class twofactor_webauthn extends rcube_plugin {
     $keys .= html::tag('ul', [ 'id' => 'twofactor_webauthn_keylist' ], rcube::Q($this->gettext('loading')));
     $keys .= $rcmail->output->button([
       'command' => 'plugin.twofactor_webauthn_prepare',
-      'class' => 'button mainaction',
+      'class' => 'button',
       'label' => 'twofactor_webauthn.add_new'
     ]);
 
     $test_button = html::p([ 'class' => 'formbuttons footerleft' ], $rcmail->output->button([
       'command' => 'plugin.twofactor_webauthn_test',
-      'class' => 'button mainaction',
+      'class' => 'button status',
       'label' => 'twofactor_webauthn.test_key'
     ]));
 
