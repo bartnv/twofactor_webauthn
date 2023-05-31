@@ -4,7 +4,7 @@
  *
  * This RoundCube plugin adds WebAuthn/FIDO2 verification to the login process
  *
- * @version 1.2.0
+ * @version 1.3.0
  * @author Bart Noordervliet <bart@mmvi.nl>
  * @url https://github.com/bartnv/twofactor_webauthn
  */
@@ -25,7 +25,7 @@ class twofactor_webauthn extends rcube_plugin {
 		$this->register_action('twofactor_webauthn', array($this, 'twofactor_webauthn_init'));
     $this->register_action('plugin.twofactor_webauthn_list', array($this, 'twofactor_webauthn_list'));
     $this->register_action('plugin.twofactor_webauthn_save', array($this, 'twofactor_webauthn_save'));
-		$this->register_action('plugin.twofactor_webauthn_prepare', array($this, 'twofactor_webauthn_prepare'));
+    $this->register_action('plugin.twofactor_webauthn_prepare', array($this, 'twofactor_webauthn_prepare'));
     $this->register_action('plugin.twofactor_webauthn_register', array($this, 'twofactor_webauthn_register'));
     $this->register_action('plugin.twofactor_webauthn_rename', array($this, 'twofactor_webauthn_rename'));
     $this->register_action('plugin.twofactor_webauthn_delete', array($this, 'twofactor_webauthn_delete'));
