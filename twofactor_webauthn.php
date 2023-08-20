@@ -135,7 +135,7 @@ class twofactor_webauthn extends rcube_plugin {
       return;
     }
     $webauthn = new \Davidearl\WebAuthn\WebAuthn($_SERVER['HTTP_HOST']);
-    $challenge = $webauthn->prepareChallengeForRegistration('RoundCube', '1', true);
+    $challenge = $webauthn->prepareChallengeForRegistration($rcmail->config->get('product_name'), '1', true);
     $rcmail->output->command('plugin.twofactor_webauthn_challenge', [ 'mode' => 'register', 'challenge' => $challenge ]);
   }
 
